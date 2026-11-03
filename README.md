@@ -1,8 +1,41 @@
-# AI Trip Planner
+# AI Trip Planner & Autonomous Agent Ecosystem
 
-An AI-powered travel planning project built with **Google Antigravity Agent Skills** and a custom **Python Model Context Protocol (MCP)** server.
+A full-stack, production-ready AI Travel Planning platform featuring a containerized **Model Context Protocol (MCP)** server in Python, an interactive **React 19 & Vite** frontend, and **Docker Compose** orchestration.
 
-This project does not use LangChain, LangGraph, or paid API keys. It uses the official MCP Python SDK and free Open-Meteo services.
+The system integrates real-time geospatial geocoding, live meteorological forecasts, and OpenStreetMap Points of Interest (POIs) to synthesize dynamic, weather-adaptive 3-day travel itineraries with real restaurant and attraction recommendations for any city worldwide.
+
+---
+
+## Architecture Overview
+
+```text
+┌───────────────────────────────────────────────┐
+│              React 19 + Vite UI               │  <-- Port 5173 (Dev) / 3000 (Prod Nginx)
+│      (Glassmorphism, Live POIs, Weather)      │
+└───────────────────────┬───────────────────────┘
+                        │
+                        ▼
+┌───────────────────────────────────────────────┐
+│             FastMCP Python 3.11               │  <-- Port 8000 (/mcp)
+│  (search_location, get_weather, plan_trip)    │
+└───────────┬───────────────────────┬───────────┘
+            │                       │
+            ▼                       ▼
+┌───────────────────────┐   ┌────────────────────────────────┐
+│   Open-Meteo APIs     │   │   OpenStreetMap (Nominatim)    │
+│ (Geocoding & Forecast)│   │ (Real Attractions & Restaurants│
+└───────────────────────┘   └────────────────────────────────┘
+```
+
+---
+
+## Key Features
+
+- **Model Context Protocol (MCP) Backend**: Built using the official Python FastMCP SDK with streamable HTTP transport (`/mcp`), enabling native tool integration with AI agents (Claude Desktop, Antigravity, Cursor).
+- **Modern React 19 Frontend**: Dark glassmorphic user interface built with Vite, Tailwind-grade styling, and Lucide icons.
+- **Dynamic POI Discovery**: Discovers real, verified restaurants and tourist attractions for any searched city worldwide without paid API keys.
+- **Weather-Adaptive Itineraries**: Adapts daily activities dynamically based on real-time rain probability and temperature (e.g., shifts to indoor museums and covered arcades when rainy).
+- **Production-Ready Docker Orchestration**: Multi-stage Docker builds for the React frontend (Nginx Alpine < 25MB) and optimized Python slim container for the MCP service.
 
 ---
 
@@ -10,114 +43,88 @@ This project does not use LangChain, LangGraph, or paid API keys. It uses the of
 
 ```text
 ai-trip-planner/
-│
 ├── .agents/
 │   └── skills/
 │       └── trip-planner/
-│           └── SKILL.md         # Antigravity Agent Skill instructions
-│
+│           └── SKILL.md            # Agent Skill definition & guidelines
 ├── mcp-server/
-│   ├── server.py                # Python MCP server using MCPServer
-│   └── requirements.txt         # Python dependencies (mcp, requests)
-│
-└── README.md                    # Project documentation & guide
+│   ├── server.py                   # FastMCP Python server (tools provider)
+│   ├── requirements.txt            # Python dependencies (mcp, requests)
+│   ├── Dockerfile                  # Python container specification
+│   └── .dockerignore               # Image build exclusions
+├── ui/
+│   ├── src/
+│   │   ├── App.jsx                 # Main application dashboard
+│   │   ├── itineraryData.js        # Dynamic itinerary synthesis & POI stitching
+│   │   ├── index.css               # Design system & glassmorphism theme
+│   │   └── main.jsx                # React DOM entry point
+│   ├── Dockerfile                  # Multi-stage build (Node -> Nginx Alpine)
+│   ├── package.json                # React 19 & Vite dependencies
+│   ├── vite.config.js              # Reverse proxy & build configuration
+│   └── index.html                  # HTML template
+├── docker-compose.yml              # Multi-container orchestration
+├── .gitignore                      # Git exclusion rules
+└── README.md                       # Documentation
 ```
 
 ---
 
-## How It Works
+## Quickstart Guide
 
-```text
-User Prompt ("Plan a 3-day trip to Tokyo...")
-         │
-         ▼
-┌─────────────────────────────────┐
-│   Google Antigravity Agent      │
-└────────────────┬────────────────┘
-                 │
-                 ├──► Reads: .agents/skills/trip-planner/SKILL.md
-                 │    (Learns how to budget, schedule, and structure trips)
-                 │
-                 └──► Calls MCP Tool: search_location("Tokyo")
-                             │
-                             ▼
-                 ┌───────────────────────────┐
-                 │     mcp-server/server.py  │
-                 │   (FastMCP Python Server) │
-                 └───────────┬───────────────┘
-                             │
-                             ▼
-                 ┌───────────────────────────┐
-                 │  Open-Meteo Geocoding API │
-                 │  (Free, No API key needed)│
-                 └───────────────────────────┘
+### Option 1: Run with Docker Compose (Recommended)
+
+Ensure Docker Desktop is running, then run from the project root:
+
+```bash
+docker compose up --build
 ```
 
-1. **Antigravity Agent Skill (`SKILL.md`)**: Teaches the Antigravity agent a specialized step-by-step workflow for trip planning (gathering requirements, validating destination coordinates, tailoring to budgets, factoring in weather, and organizing balanced daily itineraries).
-2. **Model Context Protocol (MCP) Server (`server.py`)**: Acts as a bridge between the AI agent and external data. It exposes tools that the agent can call directly.
-3. **Open-Meteo API**: A 100% free, open weather and geocoding service that provides location coordinates and details without requiring an account or API key.
+- **Frontend UI**: [http://localhost:3000](http://localhost:3000)
+- **FastMCP Service**: [http://localhost:8000/mcp](http://localhost:8000/mcp)
 
 ---
 
-## File Explanations
+### Option 2: Run Locally (Development Mode)
 
-| File | Purpose |
-| :--- | :--- |
-| [`.agents/skills/trip-planner/SKILL.md`](file:///.agents/skills/trip-planner/SKILL.md) | **Agent Skill Definition**: Contains instructions and heuristics for the Antigravity AI on how to plan trips based on destination, dates, budget, interests, and weather. |
-| [`mcp-server/server.py`](file:///mcp-server/server.py) | **MCP Tool Provider**: Implements a lightweight Python server with FastMCP exposing the `search_location` tool to fetch latitude, longitude, and country information. |
-| [`mcp-server/requirements.txt`](file:///mcp-server/requirements.txt) | **Dependency List**: Specifies the two required Python packages: `mcp` (the official SDK) and `requests` (for HTTP calls). |
-| [`README.md`](file:///README.md) | **Documentation**: Explains the setup, architecture, and commands in clear, beginner-friendly language. |
+#### 1. Start the FastMCP Backend
 
----
-
-## Getting Started (Setup & Run Guide)
-
-### Prerequisites
-- Python 3.10 or newer installed on your computer.
-
-### Step 1: Create a Python Virtual Environment
-A virtual environment keeps the project dependencies isolated so they don't conflict with other Python projects on your machine.
-
-Open your terminal in the `ai-trip-planner` folder and run:
-
-```powershell
+```bash
+cd mcp-server
 python -m venv .venv
+
+# On Windows
+.venv\Scripts\activate
+# On macOS/Linux
+source .venv/bin/activate
+
+pip install -r requirements.txt
+python server.py
 ```
-- **What this command does**: Asks Python to create an isolated environment folder named `.venv`.
+Backend runs at `http://localhost:8000`.
 
-### Step 2: Activate the Virtual Environment
-Activate the environment so that subsequent `pip` installs go directly into `.venv`:
+#### 2. Start the React Frontend
 
-- **On Windows (PowerShell)**:
-  ```powershell
-  .venv\Scripts\Activate.ps1
-  ```
-- **On macOS / Linux**:
-  ```bash
-  source .venv/bin/activate
-  ```
+Open a new terminal tab:
 
-### Step 3: Install Dependencies
-Install the required packages listed in `requirements.txt`:
-
-```powershell
-pip install -r mcp-server/requirements.txt
+```bash
+cd ui
+npm install
+npm run dev
 ```
-- **What this command does**: Downloads and installs `mcp` (FastMCP server library) and `requests` (HTTP library).
-
-### Step 4: Run the MCP Server
-To start the MCP server over standard input/output (stdio):
-
-```powershell
-python mcp-server/server.py
-```
-- **What this command does**: Runs the FastMCP server, listening for tool requests over standard input/output. (Press `Ctrl + C` in the terminal to stop it when running interactively).
+Frontend runs at `http://localhost:5173`.
 
 ---
 
-## Status and Next Steps
+## MCP Tools Reference
 
-- **Completed in Step 1**: Project structure, initial Agent Skill definition, minimal FastMCP server with `search_location` tool, requirements file, and project documentation.
-- **Next Steps**:
-  1. Test the MCP server locally with Python.
-  2. Register the MCP server in Antigravity's configuration (`mcp_config.json`) so the agent can discover and call `search_location` directly.
+| Tool | Parameters | Description |
+| :--- | :--- | :--- |
+| `search_location` | `city: str` | Resolves coordinates, country, timezone, and elevation using Open-Meteo Geocoding. |
+| `get_weather` | `latitude: float, longitude: float` | Retrieves current temperature, humidity, wind speed, and 3-day forecast. |
+| `plan_trip` | `city: str` | Bundles geocoding and live meteorological data into a single structured response. |
+
+---
+
+## Author & License
+
+Developed by [Kavss23](https://github.com/Kavss23). Licensed under the MIT License.
