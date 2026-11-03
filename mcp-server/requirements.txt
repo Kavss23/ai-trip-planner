@@ -1,0 +1,7 @@
+# MCP Server Dependencies
+# Official Model Context Protocol (MCP) Python SDK
+mcp>=1.0.0,<2.0.0
+
+
+# HTTP library for making requests to the free Open-Meteo API
+requests>=2.31.0

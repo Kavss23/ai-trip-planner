@@ -1,0 +1,26 @@
+services:
+  # FastMCP Python Backend Server
+  trip-planner-mcp:
+    build:
+      context: ./mcp-server
+      dockerfile: Dockerfile
+    image: ai-trip-planner-mcp:latest
+    container_name: trip-planner-mcp-server
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+
+  # Modern React Frontend UI
+  trip-planner-ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    image: ai-trip-planner-ui:latest
+    container_name: trip-planner-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - trip-planner-mcp
+    restart: unless-stopped
